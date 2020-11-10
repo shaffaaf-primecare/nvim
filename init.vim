@@ -5,11 +5,18 @@ syntax on
 set noshowmatch
 set mouse=a
 set relativenumber
+let mapleader = " "
 :augroup numbertoggle
 :  autocmd!
 :  autocmd BufEnter,FocusGained,InsertLeave * set relativenumber
 :  autocmd BufLeave,FocusLost,InsertEnter   * set norelativenumber
 :augroup END
+
+
+augroup highlight_yank
+    autocmd!
+    autocmd TextYankPost * silent! lua require'vim.highlight'.on_yank("IncSearch", 1000)
+augroup END
 
 
 set hlsearch
@@ -33,20 +40,21 @@ set foldmethod=indent
 set nofoldenable
 set wrap
 set inccommand=split
+set mousefocus
 
-:nmap <space>e :NERDTreeToggle<CR>
+au ColorScheme * hi Normal ctermbg=none guibg=none
+au ColorScheme myspecialcolors hi Normal ctermbg=red guibg=red
+
+:nmap <leader>e :NERDTreeToggle<CR>
 :nmap <space>r :registers<CR>
 :vmap <space>r :registers<CR>
 "Custom tabstops
-autocmd FileType vue setlocal tabstop=2 softtabstop=2 shiftwidth=2
-autocmd FileType js setlocal tabstop=2 softtabstop=2 shiftwidth=2
 "End Custom tabstops
 "
 "Switching buffers
 :nnoremap <Tab> :bnext<CR>
 :nnoremap <S-Tab> :bprevious<CR>
 
-:nnoremap 
 
 " Give more space for displaying messages.
 set cmdheight=2
@@ -85,6 +93,7 @@ Plug 'gruvbox-community/gruvbox'
 Plug 'sainnhe/gruvbox-material'
 Plug 'ryanoasis/vim-devicons'
 Plug 'pacha/vem-tabline'
+Plug 'machakann/vim-highlightedyank'
 Plug 'phanviet/vim-monokai-pro'
 Plug 'vim-airline/vim-airline'
 Plug 'flazz/vim-colorschemes'
@@ -98,10 +107,16 @@ Plug 'easymotion/vim-easymotion'
 " Plug 'hushicai/tagbar-javascript.vim'
 Plug 'preservim/tagbar'
 Plug 'Yggdroot/indentLine'
+Plug 'inkarkat/vim-ReplaceWithRegister'
+Plug '/tpope/vim-abolish'
 call plug#end()
 
+"highlightedyank
+let g:highlightedyank_highlight_duration = -1
+
 "autosave
-autocmd CursorHold * update
+" autocmd CursorHold * update
+nmap <C-s> :w<CR>
 
 let g:floaterm_width = 0.9
 let g:floaterm_height = 0.8
@@ -126,9 +141,27 @@ let g:vem_tabline_show_icon = 0
 
 nmap cc gcc
 
+function! Get_visual_selection()
+  " Why is this not a built-in Vim script function?!
+  let [lnum1, col1] = getpos("'<")[1:2]
+  let [lnum2, col2] = getpos("'>")[1:2]
+  let lines = getline(lnum1, lnum2)
+  let lines[-1] = lines[-1][: col2 - (&selection == 'inclusive' ? 1 : 2)]
+  let lines[0] = lines[0][col1 - 1:]
+  let selection = join(lines,'\n')
+  return ":Ag /".selection."/"
+  "return selection
+  " let change = input('Change the selection with: ')
+  " execute ":%s/".selection."/".change."/g"
+endfunction
+
 nnoremap   <silent>   <F12>   :FloatermToggle<CR>
 tnoremap   <silent>   <F12>   <C-\><C-n>:FloatermToggle<CR>
 nnoremap   <silent>   <F8>   :FloatermNew lazygit<CR>
+tnoremap   <silent>   <F8>   <C-\><C-n>:FloatermToggle<CR>
+nnoremap   <silent>   <F7>   :Ag<CR>
+vnoremap    <expr>   <F7>Get_visual_selection()<CR>
+tnoremap   <silent>   <F7>   :FloatermToggle<CR>
 "easyclip rempaps m to cut so here remapping gm to do m or mark
 nnoremap gm m
 "syntastic stuff
@@ -138,8 +171,10 @@ let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
 let g:syntastic_cs_checkers = ['code_checker']
+let g:syntastic_javascript_checkers=['eslint']
+let g:syntastic_javascript_eslint_exe='$(npm bin)/eslint'
 
-nnoremap <Leader>n :nohls<CR>
+nnoremap <space>n :noh<CR>
 "omnisharp options
 let g:OmniSharp_server_stdio = 1
 let g:OmniSharp_start_without_solution = 1
@@ -180,7 +215,6 @@ if executable('rg')
 endif
 
 let loaded_matchparen = 1
-let mapleader = " "
 
 nnoremap L $
 nnoremap H ^
@@ -202,8 +236,9 @@ nnoremap  <leader>Y  "+yg_
 nnoremap  <leader>y  "+y
 nnoremap  <leader>yy  "+yy
 
-nmap <leader>b :CocList buffers<CR>
-vmap <leader>b :CocList buffers<CR>
+nmap <leader>b :Buffers<CR>
+nmap <leader>f :BLines<CR>
+" vmap <leader>b :CocList buffers<CR>
 " " Paste from clipboard
 nnoremap <leader>p "+p
 nnoremap <leader>P "+P
@@ -279,6 +314,10 @@ autocmd FileType pug setlocal shiftwidth=2 tabstop=2
 autocmd Filetype typescript setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 autocmd Filetype vue setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
 
+autocmd FileType javascript setlocal commentstring=//\ %s
+autocmd FileType typescript setlocal commentstring=//\ %s
+autocmd FileType vue setlocal commentstring=//\ %s
+autocmd FileType pug setlocal commentstring=//-\ %s
 
 "Denite mappings because of neoyank
 " Define mappings
